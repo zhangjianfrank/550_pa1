@@ -117,7 +117,6 @@ public class Peer {
                     }
 
                     switch (option) {
-
                         case 1:
                             System.out.println("\nPlease fill in the destination folder you want to sync:");
                             String directoryPath = input.readLine();
@@ -255,24 +254,30 @@ public class Peer {
 
                         // Handling de-registration of files from the indexing server
                         case 3:
-//                            // Confirming user's un-register request
-//                            System.out.print("\nAre you sure (Y/N)?:");
-//                            String confirm = input.readLine();
-//
-//                            if (confirm.equalsIgnoreCase("Y")) {
+
+                            System.out.print("\nAre you sure (Y/N)?:");
+                            String confirm = input.readLine();
+
+                            if (confirm.equalsIgnoreCase("Y")) {
 //                                startTime = System.currentTimeMillis();
-//                                // Setup a Request object with Request Type = UNREGISTER and Request Data = general message
-//                                peerRequest = new Request();
-//                                peerRequest.setRequestType("UNREGISTER");
-//                                peerRequest.setRequestData("Un-register all files from index server.");
-//                                out.writeObject(peerRequest);
+                                // Setup a Request object with Request Type = UNREGISTER and Request Data = general message
+                                indexRequest = new IndexRequest();
+                                indexRequest.setRequestType(RequestTypeEnum.UNREGISTER.getCode());
+                                indexRequest.setIndexRegister(new IndexRequest.IndexRegister());
+                                indexRequest.getIndexRegister().setPeerId(this.peerId);
+                                out.writeObject(indexRequest);
 //                                endTime = System.currentTimeMillis();
 //                                time = (double) Math.round(endTime - startTime) / 1000;
-//
-//                                serverResponse = (Response) in.readObject();
-//                                System.out.println((String) serverResponse.getResponseData());
+
+                                indexServerResponse = (IndexResponse) in.readObject();
+                                if(indexServerResponse.isSuc()){
+                                    System.out.println("unregister successful.message: "+indexServerResponse.getMessage());
+                                }else{
+                                    System.out.println("unregister failure.message: "+indexServerResponse.getMessage());
+                                }
+
 //                                System.out.println("Time taken:" + time + " seconds.");
-//                            }
+                            }
                             break;
 
                         // Printing the download log
@@ -282,13 +287,11 @@ public class Peer {
 
                         // Handling Peer exit functionality
                         case 5:
-                            // Setup a Request object with Request Type = DISCONNECT and Request Data = general message
-//                            peerRequest = new Request();
-//                            peerRequest.setRequestType("DISCONNECT");
-//                            peerRequest.setRequestData("Disconnecting from server.");
-//                            out.writeObject(peerRequest);
-//                            System.out.println("Thanks for using this system.");
-//                            System.exit(0);
+                            indexRequest = new IndexRequest();
+                            indexRequest.setRequestType(RequestTypeEnum.DISCONNECT.getCode());
+                            out.writeObject(indexRequest);
+                            System.out.println("Thanks for using this system.");
+                            System.exit(0);
                             break;
                         default:
                             System.out.println("Incorrect selection, please try again!!!");

@@ -49,56 +49,57 @@ public class IndexServer {
 
             this.writeSucResult(IndexResponse.sucResp("Connection established successfully"),outputStream);
 
-            IndexRequest peerRequest = (IndexRequest) inputStream.readObject();
+            while(true){
+                IndexRequest peerRequest = (IndexRequest) inputStream.readObject();
 
-            if(peerRequest==null){
-                this.writeResult(false,null,"The request object is empty",outputStream);
-                return ;
+                if(peerRequest==null){
+                    this.writeResult(false,null,"The request object is empty",outputStream);
+                    return ;
+                }
+
+                IndexResponse indexResponse;
+                switch (RequestTypeEnum.getEnumByCode(peerRequest.getRequestType())){
+                    case REGISTER:
+                        IndexRequest.IndexRegister indexRegister =  peerRequest.getIndexRegister();
+                        if(indexRegister==null || indexRegister.getPeerId()==null || "".equals(indexRegister.getPeerId()) || indexRegister.getFiles()==null || indexRegister.getFiles().size()<1){
+
+                            this.writeFailedResult("The request IndexRegister is empty",outputStream);
+                            return ;
+                        }
+
+                        indexResponse = register(indexRegister.getPeerId(),clientIp,indexRegister.getFiles());
+                        this.writeSucResult(indexResponse,outputStream);
+
+                        break;
+                    case UNREGISTER:
+                        IndexRequest.IndexRegister unRegister =  peerRequest.getIndexRegister();
+                        if(unRegister==null || unRegister.getPeerId()==null || "".equals(unRegister.getPeerId())  ){
+                            this.writeFailedResult("The request IndexRegister is empty",outputStream);
+                            return ;
+                        }
+
+                        indexResponse = unRegister(unRegister.getPeerId(),clientIp);
+
+                        this.writeSucResult(indexResponse,outputStream);
+                        break;
+                    case LOOKUP:
+                        IndexRequest.IndexSearch indexSearch =  peerRequest.getIndexSearch();
+                        if(indexSearch==null || indexSearch.getFileName()==null){
+                            this.writeFailedResult("The request IndexSearch is empty",outputStream);
+                            return ;
+                        }
+                        indexResponse = lookup(indexSearch.getFileName());
+
+                        this.writeSucResult(indexResponse,outputStream);
+                        break;
+                    case DISCONNECT:
+                        this.writeSucResult(IndexResponse.sucResp(""),outputStream);
+                        break;
+                    default:
+                        this.writeFailedResult("Unrecognized request type,requestType:"+peerRequest.getRequestType(),outputStream);
+                        break;
+                }
             }
-
-            IndexResponse indexResponse;
-            switch (RequestTypeEnum.getEnumByCode(peerRequest.getRequestType())){
-                case REGISTER:
-                    IndexRequest.IndexRegister indexRegister =  peerRequest.getIndexRegister();
-                    if(indexRegister==null || indexRegister.getPeerId()==null || "".equals(indexRegister.getPeerId()) || indexRegister.getFiles()==null || indexRegister.getFiles().size()<1){
-
-                        this.writeFailedResult("The request IndexRegister is empty",outputStream);
-                        return ;
-                    }
-
-                    indexResponse = register(indexRegister.getPeerId(),clientIp,indexRegister.getFiles());
-                    this.writeSucResult(indexResponse,outputStream);
-
-                    break;
-                case UNREGISTER:
-                    IndexRequest.IndexRegister unRegister =  peerRequest.getIndexRegister();
-                    if(unRegister==null || unRegister.getPeerId()==null || "".equals(unRegister.getPeerId())  ){
-                        this.writeFailedResult("The request IndexRegister is empty",outputStream);
-                        return ;
-                    }
-
-                    indexResponse = unRegister(unRegister.getPeerId(),clientIp);
-
-                    this.writeSucResult(indexResponse,outputStream);
-                    break;
-                case LOOKUP:
-                    IndexRequest.IndexSearch indexSearch =  peerRequest.getIndexSearch();
-                    if(indexSearch==null || indexSearch.getFileName()==null){
-                        this.writeFailedResult("The request IndexSearch is empty",outputStream);
-                        return ;
-                    }
-                    indexResponse = lookup(indexSearch.getFileName());
-
-                    this.writeSucResult(indexResponse,outputStream);
-                    break;
-                case DISCONNECT:
-                    this.writeSucResult(IndexResponse.sucResp(""),outputStream);
-                    break;
-                default:
-                    this.writeFailedResult("Unrecognized request type,requestType:"+peerRequest.getRequestType(),outputStream);
-                    break;
-            }
-
         } catch (IOException | ClassNotFoundException e) {
             System.out.println("server handleClient error,msg:"+e.getMessage());
             e.printStackTrace();

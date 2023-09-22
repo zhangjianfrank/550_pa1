@@ -13,10 +13,9 @@ public enum RequestTypeEnum {
     public static RequestTypeEnum getEnumByCode(int code){
         for(RequestTypeEnum requestTypeEnum:values()){
             if(requestTypeEnum.getCode()==code){
-                    return REGISTER;
+                return requestTypeEnum;
             }
         }
-
         return REGISTER;
     }
 
