@@ -38,8 +38,9 @@ public class IndexRequest implements Serializable {
 
     public static class IndexRegister implements Serializable{
         private String peerId;
+        private String filePath;
         private ArrayList<String> files;
-        private Integer registerPort;
+
         public String getPeerId() {
             return peerId;
         }
@@ -56,12 +57,12 @@ public class IndexRequest implements Serializable {
             this.files = files;
         }
 
-        public Integer getRegisterPort() {
-            return registerPort;
+        public String getFilePath() {
+            return filePath;
         }
 
-        public void setRegisterPort(Integer registerPort) {
-            this.registerPort = registerPort;
+        public void setFilePath(String filePath) {
+            this.filePath = filePath;
         }
     }
 

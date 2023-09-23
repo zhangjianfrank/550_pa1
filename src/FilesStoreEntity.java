@@ -1,20 +1,16 @@
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class FilesStoreEntity implements Serializable {
-    private List<String> files;
+
     private Date addTime;
     private String peerId;
     private String fileServerAddress;
     private Integer fileServerPort;
-    public List<String> getFiles() {
-        return files;
-    }
 
-    public void setFiles(List<String> files) {
-        this.files = files;
-    }
+    private Map<String,List<String>> pathFilesMapping;
 
     public Date getAddTime() {
         return addTime;
@@ -46,5 +42,13 @@ public class FilesStoreEntity implements Serializable {
 
     public void setFileServerPort(Integer fileServerPort) {
         this.fileServerPort = fileServerPort;
+    }
+
+    public Map<String, List<String>> getPathFilesMapping() {
+        return pathFilesMapping;
+    }
+
+    public void setPathFilesMapping(Map<String, List<String>> pathFilesMapping) {
+        this.pathFilesMapping = pathFilesMapping;
     }
 }

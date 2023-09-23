@@ -84,7 +84,8 @@ public class IndexResponse implements Serializable {
         private String peerId;
         private String fileServerAddress;
         private Integer fileServerPort;
-
+        private String fileLocalPath;
+        private String fileLocalFileName;
         public String getPeerId() {
             return peerId;
         }
@@ -107,6 +108,22 @@ public class IndexResponse implements Serializable {
 
         public void setFileServerPort(Integer fileServerPort) {
             this.fileServerPort = fileServerPort;
+        }
+
+        public String getFileLocalPath() {
+            return fileLocalPath;
+        }
+
+        public void setFileLocalPath(String fileLocalPath) {
+            this.fileLocalPath = fileLocalPath;
+        }
+
+        public String getFileLocalFileName() {
+            return fileLocalFileName;
+        }
+
+        public void setFileLocalFileName(String fileLocalFileName) {
+            this.fileLocalFileName = fileLocalFileName;
         }
     }
 

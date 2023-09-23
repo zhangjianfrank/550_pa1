@@ -89,13 +89,12 @@ public class Peer {
 //                }
 //
                 while (true) {
-                    // Display different choices to the user
+                    //Show the user different choices
                     System.out.println("\nWhat do you want to do?");
                     System.out.println("1.Register files with indexing server.");
                     System.out.println("2.Lookup for a file at index server.");
                     System.out.println("3.Un-register all files of this peer from the indexing server.");
-                    System.out.println("4.Print download log of this peer.");
-                    System.out.println("5.Exit.");
+                    System.out.println("4.Exit.");
                     System.out.print("Enter choice and press ENTER:");
                     int option;
 
@@ -116,82 +115,51 @@ public class Peer {
                                 continue;
                             }
 
+                            FileUtils.DirectoryEntity directoryEntity = FileUtils.listFilesInDirectoryOrFile(filePath);
 
-                            List<String> files = FileUtils.listFilesInDirectoryOrFile(filePath);
+                            if (directoryEntity!=null && directoryEntity.getFileNames()!=null && directoryEntity.getFileNames().size()>0) {
 
-//                            File file = new File(directoryPath);
-//                            if (file.isFile()) {
-//                                myIndexedLoc.add(path.substring(0, path.lastIndexOf("/")));
-//                                System.out.println(path.substring(0, path.lastIndexOf("/")));
-//                                files.add(0, path.substring(0, path.lastIndexOf("/")));
-//                            } else if (file.isDirectory()) {
-//                                myIndexedLoc.add(path);
-//                                files.add(0, path);
-//                            }
-
-                            // 1 because path is always there
-                            if (files.size() > 1) {
-//                                startTime = System.currentTimeMillis();
-
-                                // Setup a Request object with Request Type = REGISTER and Request Data = files array list
                                 indexRequest = new IndexRequest();
                                 indexRequest.setRequestType(RequestTypeEnum.REGISTER.getCode());
                                 indexRequest.setIndexRegister(new IndexRequest.IndexRegister());
                                 indexRequest.getIndexRegister().setPeerId(this.peerId);
-                                indexRequest.getIndexRegister().setFiles((ArrayList<String>) files);
-
+                                indexRequest.getIndexRegister().setFiles((ArrayList<String>) directoryEntity.getFileNames());
+                                indexRequest.getIndexRegister().setFilePath(directoryEntity.getFileDirectory());
                                 out.writeObject(indexRequest);
 
-
                                 indexServerResponse = (IndexResponse) in.readObject();
-//                                endTime = System.currentTimeMillis();
-//                                time = (double) Math.round(endTime - startTime) / 1000;
 
-                                // If Response is success i.e. Response Code = 200, then print success message else error message
                                 if (indexServerResponse.isSuc()) {
-								/*indexedLocations =  (ArrayList<String>) serverResponse.getResponseData();
-								for (String x : indexedLocations) {
-									if (!myIndexedLoc.contains(x)) {
-										myIndexedLoc.add(x);
-									}
-								}*/
-                                    System.out.println((files.size() - 1) + " files registered with indexing server. ");
+                                    System.out.println((directoryEntity.getFileNames().size() - 1) + " files registered with indexing server. ");
                                 } else {
-                                    System.out.println("Unable to register files with server. Please try again later.");
+                                    System.err.println("Unable to register files with server. Please try again later.");
                                 }
                             } else {
                                 System.out.println("0 files found at this location. Nothing registered with indexing server.");
                             }
                             break;
 
-                        // Handling file lookup on indexing server functionality
+                        // Query files from the indexing service
                         case 2:
-                            System.out.println("\nEnter name of the file you want to look for at indexing server:");
+                            System.out.println("\nEnter the name of the file you want to find on the index server:");
                             String fileName = input.readLine();
                             String fileHostAddress;
                             int fileHostPort;
-//                            startTime = System.currentTimeMillis();
-                            // Setup a Request object with Request Type = LOOKUP and Request Data = file to be searched
+                            String serverFilePath;
                             indexRequest = new IndexRequest();
                             indexRequest.setRequestType(RequestTypeEnum.LOOKUP.getCode());
                             indexRequest.setIndexSearch(new IndexRequest.IndexSearch());
                             indexRequest.getIndexSearch().setFileName(fileName);
 
                             out.writeObject(indexRequest);
-
                             indexServerResponse = (IndexResponse) in.readObject();
-//                            endTime = System.currentTimeMillis();
-//                            time = (double) Math.round(endTime - startTime) / 1000;
-//
-                            // If Response is success i.e. Response Code = 200, then perform download operation else error message
+
                             String downloadFileLocation =null;
                             if (indexServerResponse.isSuc()) {
-//                                System.out.println("File Found. Lookup time: " + time + " seconds.");
-
-                                // Response Data contains the List of Peers which contain the searched file
+                                // The response result of the index service
                                 HashMap<Integer, IndexResponse.LookupItem> lookupMap = indexServerResponse.getData().getPeerAndIpMapping();
 
-                                // Printing all Peer details that contain the searched file
+                                // The information about all the queried files is displayed
                                 IndexResponse.LookupItem firstItem = null;
                                 if (lookupMap != null) {
                                     IndexResponse.LookupItem lookupItem;
@@ -207,17 +175,18 @@ public class Peer {
                                     break;
                                 }
 
-                                // If the file is a Text file then we can print or else only download file
+                                // If a file is text, provide two options to download or print
                                 if (fileName.trim().endsWith(".txt")) {
                                     System.out.print("\nDo you want to download (D) or print this file (P)? Enter (D/P):");
                                     String download = input.readLine();
 
-                                    // In case there are more than 1 peer, then we user will select which peer to use for download
+                                    // If multiple peer services are available, the user needs to select one of them
                                     if(lookupMap.size() > 1) {
                                         System.out.print("\nEnter Number from which you want to download the file:");
                                         int number = Integer.parseInt(input.readLine());
                                         firstItem = lookupMap.get(number);
                                     }
+
                                     if(firstItem==null){
                                         System.err.println("The number entered is incorrect.");
                                         break;
@@ -225,15 +194,18 @@ public class Peer {
 
                                     fileHostAddress = firstItem.getFileServerAddress();
                                     fileHostPort = firstItem.getFileServerPort();
+                                    serverFilePath = firstItem.getFileLocalPath();
 
+                                    if(serverFilePath==null){
+                                        System.err.print("The path of the destination file remote server is incorrect.");
+                                        break;
+                                    }
 
                                     if (download.equalsIgnoreCase("D")) {
                                         System.out.println("The download file you select will be downloaded to the 'downloads' folder.");
-
-                                        downloadFileLocation=downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                        downloadFileLocation=downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
                                     } else if (download.equalsIgnoreCase("P")) {
-
-                                        downloadFileLocation =downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                        downloadFileLocation =downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
                                         FileUtils.readAndOutputFile(downloadFileLocation);
                                     }
                                 } else {
@@ -252,53 +224,49 @@ public class Peer {
 
                                         fileHostAddress = firstItem.getFileServerAddress();
                                         fileHostPort = firstItem.getFileServerPort();
+                                        serverFilePath = firstItem.getFileLocalPath();
 
-                                        // Obtain the searched file from the specified Peer
-                                        downloadFileLocation = downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                        if(serverFilePath==null){
+                                            System.err.print("The path of the destination file remote server is incorrect.");
+                                            break;
+                                        }
+
+                                        downloadFileLocation = downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
                                     }
                                 }
                                 System.out.println("All operations completed, download file location: "+downloadFileLocation);
                             } else {
                                 System.out.println("File retrieval failed, failure message:" + indexServerResponse.getMessage());
-//                                System.out.println("Lookup time: " + time + " seconds.");
                             }
                             break;
 
-                        // Handling de-registration of files from the indexing server
+                        //De-registration of the index server
                         case 3:
 
                             System.out.print("\nAre you sure (Y/N)?:");
                             String confirm = input.readLine();
 
                             if (confirm.equalsIgnoreCase("Y")) {
-//                                startTime = System.currentTimeMillis();
-                                // Setup a Request object with Request Type = UNREGISTER and Request Data = general message
+
+                                //Send a de-registration request to the index service
                                 indexRequest = new IndexRequest();
                                 indexRequest.setRequestType(RequestTypeEnum.UNREGISTER.getCode());
                                 indexRequest.setIndexRegister(new IndexRequest.IndexRegister());
                                 indexRequest.getIndexRegister().setPeerId(this.peerId);
                                 out.writeObject(indexRequest);
-//                                endTime = System.currentTimeMillis();
-//                                time = (double) Math.round(endTime - startTime) / 1000;
-
+                                //Read result
                                 indexServerResponse = (IndexResponse) in.readObject();
                                 if(indexServerResponse.isSuc()){
-                                    System.out.println("unregister successful.message: "+indexServerResponse.getMessage());
+                                    System.out.println("unregister successful...");
                                 }else{
-                                    System.out.println("unregister failure.message: "+indexServerResponse.getMessage());
+                                    System.out.println("unregister failure. message: "+indexServerResponse.getMessage());
                                 }
 
-//                                System.out.println("Time taken:" + time + " seconds.");
                             }
                             break;
 
-                        // Printing the download log
-                        case 4:
-//                            (new LogUtility("peer")).print();
-                            break;
-
                         // Process exit logic
-                        case 5:
+                        case 4:
                             indexRequest = new IndexRequest();
                             indexRequest.setRequestType(RequestTypeEnum.DISCONNECT.getCode());
                             out.writeObject(indexRequest);
@@ -334,6 +302,7 @@ public class Peer {
         }
 
         private String downloadFile(String fileHostAddress, Integer fileHostPort,String  fileName, ObjectOutputStream out,ObjectInputStream in){
+            System.out.println("downloadFile : fileHostAddress "+fileHostAddress +", fileHostPort "+fileHostPort+" ,fileName: "+fileName);
             return null;
         }
 
