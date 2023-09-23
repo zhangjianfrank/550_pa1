@@ -1,16 +1,20 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
-public class Peer {
+public class PeerServer {
     private static final String DEFAULT_INDEX_SERVER_HOST = "127.0.0.1";
     private static final String DEFAULT_INDEX_SERVER_PORT = "8080";
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+
         String peerId = UUID.randomUUID().toString();
-        System.out.println("peer initiates the registration of the server. peerId:"+peerId);
         Thread peerClientThread = new Thread(new PeerClient(peerId));
         peerClientThread.start();
 
+        //File Server
+        FileServer fileServer = new FileServer();
+        fileServer.startFileServer(FileServer.FILE_SERVER_DEFAULT_PORT);
 
     }
 
@@ -29,11 +33,12 @@ public class Peer {
             IndexResponse indexServerResponse;
 
             try {
+                TimeUnit.SECONDS.sleep(1);
+                System.out.println("peer initiates the registration of the server. peerId:"+peerId);
                 input = new BufferedReader(new InputStreamReader(System.in));
                 System.out.print("Enter Server IP Address (The default address is 127.0.0.1):");
                 String serverAddress = input.readLine();
-//                long startTime, endTime;
-//                double time;
+
                 if(serverAddress.trim().length() == 0 || "\n".equals(serverAddress)) {
                     serverAddress = DEFAULT_INDEX_SERVER_HOST;
                 }
@@ -64,30 +69,7 @@ public class Peer {
                 }
 
                 System.out.println("The PEER has established a connection with server "+serverAddress+":"+serverPort+" .");
-//                peerRequest = new Request();???
-//                peerRequest.setRequestType("REPLICATION");
-//                peerRequest.setRequestData(replicaChoice);
-//                out.writeObject(peerRequest);
-//
-//                if (replicaChoice.equalsIgnoreCase("Y")) {
-//                    // Read the Replication response from the server
-//                    myIndexedLoc.add(REPLICATION_PATH);
-//                    serverResponse = (Response) in.readObject();
-//                    ConcurrentHashMap<String, ArrayList<String>> data = (ConcurrentHashMap<String, ArrayList<String>>) serverResponse.getResponseData();
-//                    new ReplicationService(data).start();
-//                }
-//
-//                // Previously indexed locations if any
-//                serverResponse = (Response) in.readObject();
-//                ArrayList<String> indexedLocations =  (ArrayList<String>) serverResponse.getResponseData();
-//                if (indexedLocations != null) {
-//                    for (String x : indexedLocations) {
-//                        if (!myIndexedLoc.contains(x)) {
-//                            myIndexedLoc.add(x);
-//                        }
-//                    }
-//                }
-//
+
                 while (true) {
                     //Show the user different choices
                     System.out.println("\nWhat do you want to do?");
@@ -203,9 +185,9 @@ public class Peer {
 
                                     if (download.equalsIgnoreCase("D")) {
                                         System.out.println("The download file you select will be downloaded to the 'downloads' folder.");
-                                        downloadFileLocation=downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
+                                        downloadFileLocation=downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName,fileName);
                                     } else if (download.equalsIgnoreCase("P")) {
-                                        downloadFileLocation =downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
+                                        downloadFileLocation =downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName,fileName);
                                         FileUtils.readAndOutputFile(downloadFileLocation);
                                     }
                                 } else {
@@ -231,7 +213,7 @@ public class Peer {
                                             break;
                                         }
 
-                                        downloadFileLocation = downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, out, in);
+                                        downloadFileLocation = downloadFile(fileHostAddress, fileHostPort, serverFilePath+fileName, fileName);
                                     }
                                 }
                                 System.out.println("All operations completed, download file location: "+downloadFileLocation);
@@ -301,14 +283,13 @@ public class Peer {
             }
         }
 
-        private String downloadFile(String fileHostAddress, Integer fileHostPort,String  fileName, ObjectOutputStream out,ObjectInputStream in){
-            System.out.println("downloadFile : fileHostAddress "+fileHostAddress +", fileHostPort "+fileHostPort+" ,fileName: "+fileName);
-            return null;
+        private String downloadFile(String fileHostAddress, Integer fileHostPort,String fileFullName,String fileName) throws Exception {
+
+            FileReceiver fileReceiver = new FileReceiver();
+
+            return fileReceiver.receiveFile(fileFullName,fileName,fileHostAddress,fileHostPort);
         }
 
     }
-
-
-
 
 }

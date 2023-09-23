@@ -11,7 +11,7 @@ run_server:
 	java IndexServer
 
 run_peer:
-	java Peer
+	java PeerServer
 
 run_test:
 	java TestClient
