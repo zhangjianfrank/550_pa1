@@ -286,7 +286,6 @@ public class PeerServer {
         private String downloadFile(String fileHostAddress, Integer fileHostPort,String fileFullName,String fileName) throws Exception {
 
             FileReceiver fileReceiver = new FileReceiver();
-
             return fileReceiver.receiveFile(fileFullName,fileName,fileHostAddress,fileHostPort);
         }
 

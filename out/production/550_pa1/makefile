@@ -2,9 +2,10 @@
 default: all
 
 all:
-	javac *.java
+	mkdir -p classes
+	javac *.java -d ./classes
 
-clean: 
+clean:
 	$(RM) *.class
 
 run_server:

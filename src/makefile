@@ -4,7 +4,7 @@ default: all
 all:
 	javac *.java
 
-clean: 
+clean:
 	$(RM) *.class
 
 run_server:

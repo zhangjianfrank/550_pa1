@@ -1,7 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.Hashtable;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -70,50 +68,6 @@ public class FileServer {
         DatagramPacket outputPacket = new DatagramPacket(outputBuffer, outputBuffer.length, inetAddress, port);
         clientSocket.send(outputPacket);
     }
-
-
-//
-//    private void sendFileStream( String ipAddress,int port,String fileName) {
-//
-//        Socket clientFileSocket;
-//        DataInputStream fileInputStream = null;
-//        DataOutputStream fileOutputStream = null;
-//
-//        try {
-//            clientFileSocket = new Socket(ipAddress, port);
-//            fileInputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(fileName)));
-//            fileOutputStream = new DataOutputStream(clientFileSocket.getOutputStream());
-//
-//            byte[] fileBuffer = new byte[INPUT_BUFFER_SIZE];
-//            while (true) {
-//                int bytesRead = fileInputStream.read(fileBuffer);
-//                if ( bytesRead == -1 ) {
-//                    break;
-//                }
-//                fileOutputStream.write(fileBuffer, 0, bytesRead);
-//            }
-//            fileOutputStream.flush();
-//        } catch ( IOException ex ) {
-////            LOGGER.catching(ex);
-//        } finally {
-//            // Close Socket and DataStream
-//            try {
-//                if ( fileInputStream != null ) {
-//                    fileInputStream.close();
-//                }
-//                if ( fileOutputStream != null ) {
-//                    fileOutputStream.close();
-//                }
-//                if ( socket != null ) {
-//                    socket.close();
-//                }
-//            } catch ( IOException ex ) {
-////                LOGGER.catching(ex);
-//            }
-//        }
-//    }
-
-
 
     private void sendFileStream(String ipAddress, int port, String fileName) {
         Socket clientFileSocket = null;
