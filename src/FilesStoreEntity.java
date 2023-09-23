@@ -6,8 +6,8 @@ public class FilesStoreEntity implements Serializable {
     private List<String> files;
     private Date addTime;
     private String peerId;
-    private String clientIp;
-
+    private String fileServerAddress;
+    private Integer fileServerPort;
     public List<String> getFiles() {
         return files;
     }
@@ -32,11 +32,19 @@ public class FilesStoreEntity implements Serializable {
         this.peerId = peerId;
     }
 
-    public String getClientIp() {
-        return clientIp;
+    public String getFileServerAddress() {
+        return fileServerAddress;
     }
 
-    public void setClientIp(String clientIp) {
-        this.clientIp = clientIp;
+    public void setFileServerAddress(String fileServerAddress) {
+        this.fileServerAddress = fileServerAddress;
+    }
+
+    public Integer getFileServerPort() {
+        return fileServerPort;
+    }
+
+    public void setFileServerPort(Integer fileServerPort) {
+        this.fileServerPort = fileServerPort;
     }
 }

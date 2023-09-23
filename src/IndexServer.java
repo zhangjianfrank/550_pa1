@@ -1,8 +1,6 @@
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -14,11 +12,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class IndexServer {
 
     private final ConcurrentMap<String,FilesStoreEntity> indexFilesStore = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String,String> searchFilesMapping = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Set<String>> searchFilesMapping = new ConcurrentHashMap<>();
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
     private final Lock rLock = rwLock.readLock();
     private final Lock wLock = rwLock.writeLock();
     private static final int DEFAULT_SERVER_PORT=8080;
+    private static final int FILE_SERVER_DEFAULT_PORT=10000;
     public static void main(String[] args) throws IOException {
         new IndexServer().startServer(DEFAULT_SERVER_PORT);
     }
@@ -30,7 +29,6 @@ public class IndexServer {
         while (true) {
             try {
                 Socket clientSocket = serverSocket.accept();
-                System.out.println(clientSocket);
                 // 将客户端连接交给工作线程池处理
                 workerThreadPool.submit(() -> handleClient(clientSocket));
             } catch (IOException e) {
@@ -61,9 +59,11 @@ public class IndexServer {
                 switch (RequestTypeEnum.getEnumByCode(peerRequest.getRequestType())){
                     case REGISTER:
                         IndexRequest.IndexRegister indexRegister =  peerRequest.getIndexRegister();
-                        if(indexRegister==null || indexRegister.getPeerId()==null || "".equals(indexRegister.getPeerId()) || indexRegister.getFiles()==null || indexRegister.getFiles().size()<1){
+                        if(indexRegister==null || indexRegister.getPeerId()==null
+                                || "".equals(indexRegister.getPeerId()) || indexRegister.getFiles()==null
+                                || indexRegister.getFiles().size()<1 ){
 
-                            this.writeFailedResult("The request IndexRegister is empty",outputStream);
+                            this.writeFailedResult("The request IndexRegister is invalid",outputStream);
                             return ;
                         }
 
@@ -74,7 +74,7 @@ public class IndexServer {
                     case UNREGISTER:
                         IndexRequest.IndexRegister unRegister =  peerRequest.getIndexRegister();
                         if(unRegister==null || unRegister.getPeerId()==null || "".equals(unRegister.getPeerId())  ){
-                            this.writeFailedResult("The request IndexRegister is empty",outputStream);
+                            this.writeFailedResult("The request IndexRegister is invalid",outputStream);
                             return ;
                         }
 
@@ -85,7 +85,7 @@ public class IndexServer {
                     case LOOKUP:
                         IndexRequest.IndexSearch indexSearch =  peerRequest.getIndexSearch();
                         if(indexSearch==null || indexSearch.getFileName()==null){
-                            this.writeFailedResult("The request IndexSearch is empty",outputStream);
+                            this.writeFailedResult("The request IndexSearch is invalid",outputStream);
                             return ;
                         }
                         indexResponse = lookup(indexSearch.getFileName());
@@ -93,8 +93,9 @@ public class IndexServer {
                         this.writeSucResult(indexResponse,outputStream);
                         break;
                     case DISCONNECT:
-                        this.writeSucResult(IndexResponse.sucResp(""),outputStream);
-                        break;
+
+                        System.out.println("The client has requested that the connection be closed");
+                        return ;
                     default:
                         this.writeFailedResult("Unrecognized request type,requestType:"+peerRequest.getRequestType(),outputStream);
                         break;
@@ -104,7 +105,7 @@ public class IndexServer {
             System.out.println("server handleClient error,msg:"+e.getMessage());
             e.printStackTrace();
         }finally {
-            if(clientSocket!=null){
+            if(clientSocket!=null && clientSocket.isConnected()){
                 try{
                     clientSocket.close();
                 }catch (IOException e){
@@ -131,25 +132,27 @@ public class IndexServer {
     }
 
     private IndexResponse register(String peerId, String peerAddress, ArrayList<String> files) {
-        System.out.println("Registering files:"+files+" from Peer(" + peerAddress+"), peerId:"+peerId);
+        System.out.println("Registering files:"+files+" from Peer(" + peerAddress+" ), peerId:"+peerId);
 
         String peerKeyStr = "peerId:" + peerId + "_" + "ip:" + peerAddress;
         List<String> fileList;
         FilesStoreEntity filesStoreEntity;
         Date date = new Date();
-
+        Set<String> peerKeyList;
         wLock.lock();
         try{
             if(indexFilesStore.containsKey(peerKeyStr)){
                 filesStoreEntity = indexFilesStore.get(peerKeyStr);
                 filesStoreEntity.setAddTime(date);
-                filesStoreEntity.setClientIp(peerAddress);
+                filesStoreEntity.setFileServerAddress(peerAddress);
+                filesStoreEntity.setFileServerPort(FILE_SERVER_DEFAULT_PORT);
                 fileList = filesStoreEntity.getFiles();
             }else{
                 fileList = new ArrayList<>(files);
                 filesStoreEntity = new FilesStoreEntity();
                 filesStoreEntity.setAddTime(date);
-                filesStoreEntity.setClientIp(peerAddress);
+                filesStoreEntity.setFileServerAddress(peerAddress);
+                filesStoreEntity.setFileServerPort(FILE_SERVER_DEFAULT_PORT);
                 filesStoreEntity.setPeerId(peerId);
                 filesStoreEntity.setFiles(fileList);
                 indexFilesStore.put(peerKeyStr,filesStoreEntity);
@@ -157,7 +160,14 @@ public class IndexServer {
 
             if(fileList!=null && fileList.size()>0){
                 for(String file:fileList){
-                    searchFilesMapping.put(file,peerKeyStr);
+                    if(searchFilesMapping.containsKey(file)){
+                        peerKeyList = searchFilesMapping.get(file);
+                        peerKeyList.add(peerKeyStr);
+                    }else{
+                        peerKeyList = new HashSet<>();
+                        peerKeyList.add(peerKeyStr);
+                        searchFilesMapping.put(file,peerKeyList);
+                    }
                 }
 
             }
@@ -211,21 +221,28 @@ public class IndexServer {
 
         rLock.lock();
         try{
-            String peerKey = this.searchFilesMapping.get(fileName);
-            if(peerKey==null){
-                System.out.println("No file found, name:"+fileName);
+            Set<String> peerKeySet = this.searchFilesMapping.get(fileName);
+            if(peerKeySet==null || peerKeySet.size()<1){
+                System.err.println("No file found, name:"+fileName);
                 return IndexResponse.failedResp("No file found, name:"+fileName);
             }
-
-            FilesStoreEntity filesStoreEntity = this.indexFilesStore.get(peerKey);
-            if(filesStoreEntity==null){
-                System.out.println("No files found, name:"+fileName+" ,peerKey:"+peerKey);
-                return IndexResponse.failedResp("No file found, name:"+fileName+" ,peerKey:"+peerKey);
+            IndexResponse.ResultData resultData = new IndexResponse.ResultData();
+            resultData.setPeerAndIpMapping(new HashMap<>());
+            int num=1;
+            for(String peerKey:peerKeySet){
+                FilesStoreEntity filesStoreEntity = this.indexFilesStore.get(peerKey);
+                if(filesStoreEntity==null){
+                    System.err.println("Not found filesStoreEntity, name:"+fileName+" ,peerKey:"+peerKey);
+                    continue;
+                }
+                IndexResponse.LookupItem lookupItem = new IndexResponse.LookupItem();
+                lookupItem.setPeerId(filesStoreEntity.getPeerId());
+                lookupItem.setFileServerAddress(filesStoreEntity.getFileServerAddress());
+                lookupItem.setFileServerPort(filesStoreEntity.getFileServerPort());
+                resultData.getPeerAndIpMapping().put(num,lookupItem);
+                num++;
             }
 
-            IndexResponse.ResultData resultData = new IndexResponse.ResultData();
-            resultData.setPeerId(filesStoreEntity.getPeerId());
-            resultData.setFileServerIp(filesStoreEntity.getClientIp());
             return IndexResponse.sucResp(resultData);
         }catch (Exception e){
             System.out.println("call lookup error,error:"+e.getMessage());

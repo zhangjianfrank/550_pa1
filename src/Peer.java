@@ -1,8 +1,6 @@
 import java.io.*;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Peer {
     private static final String DEFAULT_INDEX_SERVER_HOST = "127.0.0.1";
@@ -10,14 +8,11 @@ public class Peer {
     public static void main(String[] args) {
         String peerId = UUID.randomUUID().toString();
         System.out.println("peer initiates the registration of the server. peerId:"+peerId);
-
         Thread peerClientThread = new Thread(new PeerClient(peerId));
         peerClientThread.start();
 
 
     }
-
-
 
     public static class PeerClient implements Runnable{
         private final String peerId;
@@ -26,14 +21,11 @@ public class Peer {
         }
         @Override
         public void run() {
-
             Socket peerClientSocket = null;
             BufferedReader input = null;
-
-
             ObjectInputStream in = null;
             ObjectOutputStream out = null;
-            IndexRequest indexRequest =null;
+            IndexRequest indexRequest;
             IndexResponse indexServerResponse;
 
             try {
@@ -51,13 +43,11 @@ public class Peer {
                     System.exit(0);
                 }
 
-
                 System.out.print("Enter Server PORT (The default PORT is 8080):");
                 String serverPort = input.readLine();
                 if(serverPort.trim().length() == 0 || "\n".equals(serverPort)) {
                     serverPort = DEFAULT_INDEX_SERVER_PORT;
                 }
-
 
                 peerClientSocket = new Socket(serverAddress, Integer.parseInt(serverPort));
 
@@ -119,15 +109,15 @@ public class Peer {
                     switch (option) {
                         case 1:
                             System.out.println("\nPlease fill in the destination folder you want to sync:");
-                            String directoryPath = input.readLine();
+                            String filePath = input.readLine();
 
-                            if(directoryPath.trim().length() == 0) {
+                            if(filePath.trim().length() == 0) {
                                 System.out.println("Invalid path, please try again.");
                                 continue;
                             }
 
 
-                            List<String> files = FileUtils.listFilesInDirectory(directoryPath);
+                            List<String> files = FileUtils.listFilesInDirectoryOrFile(filePath);
 
 //                            File file = new File(directoryPath);
 //                            if (file.isFile()) {
@@ -176,80 +166,102 @@ public class Peer {
 
                         // Handling file lookup on indexing server functionality
                         case 2:
-//                            System.out.println("\nEnter name of the file you want to look for at indexing server:");
-//                            String fileName = input.readLine();
-//                            String hostAddress;
-//
+                            System.out.println("\nEnter name of the file you want to look for at indexing server:");
+                            String fileName = input.readLine();
+                            String fileHostAddress;
+                            int fileHostPort;
 //                            startTime = System.currentTimeMillis();
-//                            // Setup a Request object with Request Type = LOOKUP and Request Data = file to be searched
-//                            peerRequest = new Request();
-//                            peerRequest.setRequestType("LOOKUP");
-//                            peerRequest.setRequestData(fileName);
-//                            out.writeObject(peerRequest);
-//
-//                            serverResponse = (Response) in.readObject();
+                            // Setup a Request object with Request Type = LOOKUP and Request Data = file to be searched
+                            indexRequest = new IndexRequest();
+                            indexRequest.setRequestType(RequestTypeEnum.LOOKUP.getCode());
+                            indexRequest.setIndexSearch(new IndexRequest.IndexSearch());
+                            indexRequest.getIndexSearch().setFileName(fileName);
+
+                            out.writeObject(indexRequest);
+
+                            indexServerResponse = (IndexResponse) in.readObject();
 //                            endTime = System.currentTimeMillis();
 //                            time = (double) Math.round(endTime - startTime) / 1000;
 //
-//                            // If Response is success i.e. Response Code = 200, then perform download operation else error message
-//                            if (serverResponse.getResponseCode() == 200) {
+                            // If Response is success i.e. Response Code = 200, then perform download operation else error message
+                            String downloadFileLocation =null;
+                            if (indexServerResponse.isSuc()) {
 //                                System.out.println("File Found. Lookup time: " + time + " seconds.");
-//
-//                                // Response Data contains the List of Peers which contain the searched file
-//                                HashMap<Integer, String> lookupResults = (HashMap<Integer, String>) serverResponse.getResponseData();
-//
-//                                // Printing all Peer details that contain the searched file
-//                                if (lookupResults != null) {
-//                                    for (Map.Entry e : lookupResults.entrySet()) {
-//                                        System.out.println("\nPeer ID:" + e.getKey().toString());
-//                                        System.out.println("Host Address:" + e.getValue().toString());
-//                                    }
-//                                }
-//
-//                                // If the file is a Text file then we can print or else only download file
-//                                if (fileName.trim().endsWith(".txt")) {
-//                                    System.out.print("\nDo you want to download (D) or print this file (P)? Enter (D/P):");
-//                                    String download = input.readLine();
-//
-//                                    // In case there are more than 1 peer, then we user will select which peer to use for download
-//                                    if(lookupResults.size() > 1) {
-//                                        System.out.print("Enter Peer ID from which you want to download the file:");
-//                                        int peerId = Integer.parseInt(input.readLine());
-//                                        hostAddress = lookupResults.get(peerId);
-//                                    } else {
-//                                        Map.Entry<Integer,String> entry = lookupResults.entrySet().iterator().next();
-//                                        hostAddress = entry.getValue();
-//                                    }
-//
-//                                    if (download.equalsIgnoreCase("D")) {
-//                                        System.out.println("The file will be downloaded in the 'downloads' folder in the current location.");
-//                                        // Obtain the searched file from the specified Peer
-//                                        obtain(hostAddress, 20000, fileName, out, in);
-//                                    } else if (download.equalsIgnoreCase("P")) {
-//                                        // Obtain the searched file from the specified Peer and print its contents
-//                                        obtain(hostAddress, 20000, fileName, out, in);
-//                                        FileUtility.printFile(fileName);
-//                                    }
-//                                } else {
-//                                    System.out.print("\nDo you want to download this file?(Y/N):");
-//                                    String download = input.readLine();
-//                                    if (download.equalsIgnoreCase("Y")) {
-//                                        if(lookupResults.size() > 1) {
-//                                            System.out.print("Enter Peer ID from which you want to download the file:");
-//                                            int peerId = Integer.parseInt(input.readLine());
-//                                            hostAddress = lookupResults.get(peerId);
-//                                        } else {
-//                                            Map.Entry<Integer,String> entry = lookupResults.entrySet().iterator().next();
-//                                            hostAddress = entry.getValue();
-//                                        }
-//                                        // Obtain the searched file from the specified Peer
-//                                        obtain(hostAddress, 20000, fileName, out, in);
-//                                    }
-//                                }
-//                            } else {
-//                                System.out.println((String) serverResponse.getResponseData());
+
+                                // Response Data contains the List of Peers which contain the searched file
+                                HashMap<Integer, IndexResponse.LookupItem> lookupMap = indexServerResponse.getData().getPeerAndIpMapping();
+
+                                // Printing all Peer details that contain the searched file
+                                IndexResponse.LookupItem firstItem = null;
+                                if (lookupMap != null) {
+                                    IndexResponse.LookupItem lookupItem;
+                                    for (Map.Entry<Integer, IndexResponse.LookupItem> entry : lookupMap.entrySet()) {
+                                        lookupItem =entry.getValue();
+                                        System.out.println("\nNumber: "+entry.getKey()+" , Peer ID:" + lookupItem.getPeerId() + ", Host Address:" + lookupItem.getFileServerAddress()+":"+lookupItem.getFileServerPort());
+                                        if(firstItem==null){
+                                            firstItem = entry.getValue();
+                                        }
+                                    }
+                                }else{
+                                    System.err.println("File retrieval failed, failure message: The host list is empty" );
+                                    break;
+                                }
+
+                                // If the file is a Text file then we can print or else only download file
+                                if (fileName.trim().endsWith(".txt")) {
+                                    System.out.print("\nDo you want to download (D) or print this file (P)? Enter (D/P):");
+                                    String download = input.readLine();
+
+                                    // In case there are more than 1 peer, then we user will select which peer to use for download
+                                    if(lookupMap.size() > 1) {
+                                        System.out.print("\nEnter Number from which you want to download the file:");
+                                        int number = Integer.parseInt(input.readLine());
+                                        firstItem = lookupMap.get(number);
+                                    }
+                                    if(firstItem==null){
+                                        System.err.println("The number entered is incorrect.");
+                                        break;
+                                    }
+
+                                    fileHostAddress = firstItem.getFileServerAddress();
+                                    fileHostPort = firstItem.getFileServerPort();
+
+
+                                    if (download.equalsIgnoreCase("D")) {
+                                        System.out.println("The download file you select will be downloaded to the 'downloads' folder.");
+
+                                        downloadFileLocation=downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                    } else if (download.equalsIgnoreCase("P")) {
+
+                                        downloadFileLocation =downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                        FileUtils.readAndOutputFile(downloadFileLocation);
+                                    }
+                                } else {
+                                    System.out.print("\nDo you want to download this file?(Y/N):");
+                                    String download = input.readLine();
+                                    if (download.equalsIgnoreCase("Y")) {
+                                        if(lookupMap.size() > 1) {
+                                            System.out.print("Enter Number from which you want to download the file:");
+                                            int number = Integer.parseInt(input.readLine());
+                                            firstItem = lookupMap.get(number);
+                                        }
+                                        if(firstItem==null){
+                                            System.err.print("The number entered is incorrect.");
+                                            break;
+                                        }
+
+                                        fileHostAddress = firstItem.getFileServerAddress();
+                                        fileHostPort = firstItem.getFileServerPort();
+
+                                        // Obtain the searched file from the specified Peer
+                                        downloadFileLocation = downloadFile(fileHostAddress, fileHostPort, fileName, out, in);
+                                    }
+                                }
+                                System.out.println("All operations completed, download file location: "+downloadFileLocation);
+                            } else {
+                                System.out.println("File retrieval failed, failure message:" + indexServerResponse.getMessage());
 //                                System.out.println("Lookup time: " + time + " seconds.");
-//                            }
+                            }
                             break;
 
                         // Handling de-registration of files from the indexing server
@@ -285,16 +297,16 @@ public class Peer {
 //                            (new LogUtility("peer")).print();
                             break;
 
-                        // Handling Peer exit functionality
+                        // Process exit logic
                         case 5:
                             indexRequest = new IndexRequest();
                             indexRequest.setRequestType(RequestTypeEnum.DISCONNECT.getCode());
                             out.writeObject(indexRequest);
                             System.out.println("Thanks for using this system.");
-                            System.exit(0);
-                            break;
+                            return ;
+
                         default:
-                            System.out.println("Incorrect selection, please try again!!!");
+                            System.err.println("Incorrect selection, please try again!!!");
                             break;
                     }
                 }
@@ -302,25 +314,32 @@ public class Peer {
                 e.printStackTrace();
             } finally {
                 try {
-                    // Closing all streams. Close the stream only if it is initialized
-                    if (out != null)
+                    if (out != null){
                         out.close();
-
-                    if (in != null)
+                    }
+                    if (in != null){
                         in.close();
-
-                    if (peerClientSocket != null)
+                    }
+                    if (peerClientSocket != null){
                         peerClientSocket.close();
-
-                    if (input != null)
+                    }
+                    if (input != null){
                         input.close();
+                    }
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
+
+        private String downloadFile(String fileHostAddress, Integer fileHostPort,String  fileName, ObjectOutputStream out,ObjectInputStream in){
+            return null;
+        }
+
     }
+
+
 
 
 }

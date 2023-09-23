@@ -1,5 +1,7 @@
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class IndexResponse implements Serializable {
     private boolean suc;
@@ -40,14 +42,18 @@ public class IndexResponse implements Serializable {
     }
 
     public static class ResultData implements Serializable{
+        /**
+         * register use
+         */
         private String peerId;
         /**
          * register use
          */
         private ArrayList<String> files;
-
-        private String fileServerIp;
-
+        /**
+         * lookup use
+         */
+        private HashMap<Integer,LookupItem> peerAndIpMapping;
 
         public String getPeerId() {
             return peerId;
@@ -65,15 +71,44 @@ public class IndexResponse implements Serializable {
             this.files = files;
         }
 
-        public String getFileServerIp() {
-            return fileServerIp;
+        public HashMap<Integer, LookupItem> getPeerAndIpMapping() {
+            return peerAndIpMapping;
         }
 
-        public void setFileServerIp(String fileServerIp) {
-            this.fileServerIp = fileServerIp;
+        public void setPeerAndIpMapping(HashMap<Integer, LookupItem> peerAndIpMapping) {
+            this.peerAndIpMapping = peerAndIpMapping;
         }
     }
 
+    public static class LookupItem implements Serializable{
+        private String peerId;
+        private String fileServerAddress;
+        private Integer fileServerPort;
+
+        public String getPeerId() {
+            return peerId;
+        }
+
+        public void setPeerId(String peerId) {
+            this.peerId = peerId;
+        }
+
+        public String getFileServerAddress() {
+            return fileServerAddress;
+        }
+
+        public void setFileServerAddress(String fileServerAddress) {
+            this.fileServerAddress = fileServerAddress;
+        }
+
+        public Integer getFileServerPort() {
+            return fileServerPort;
+        }
+
+        public void setFileServerPort(Integer fileServerPort) {
+            this.fileServerPort = fileServerPort;
+        }
+    }
 
     public static IndexResponse failedResp(String message){
         IndexResponse indexResponse = new IndexResponse();

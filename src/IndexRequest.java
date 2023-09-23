@@ -39,7 +39,7 @@ public class IndexRequest implements Serializable {
     public static class IndexRegister implements Serializable{
         private String peerId;
         private ArrayList<String> files;
-
+        private Integer registerPort;
         public String getPeerId() {
             return peerId;
         }
@@ -54,6 +54,14 @@ public class IndexRequest implements Serializable {
 
         public void setFiles(ArrayList<String> files) {
             this.files = files;
+        }
+
+        public Integer getRegisterPort() {
+            return registerPort;
+        }
+
+        public void setRegisterPort(Integer registerPort) {
+            this.registerPort = registerPort;
         }
     }
 
