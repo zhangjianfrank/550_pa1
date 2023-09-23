@@ -19,14 +19,14 @@ public class IndexServer {
     private static final int DEFAULT_SERVER_PORT=8080;
     private static final int FILE_SERVER_DEFAULT_PORT=10000;
     private static final String PEER_KEY_FORMAT = "peer_key_Id:%s_ip:%s";
-
+    private static final int THREAD_POOL_SIZE = 1024;
     public static void main(String[] args) throws IOException {
         new IndexServer().startServer(DEFAULT_SERVER_PORT);
     }
 
     public void startServer(int port) throws IOException {
         ServerSocket serverSocket = new ServerSocket(port);
-        ExecutorService workerThreadPool = Executors.newFixedThreadPool(10);
+        ExecutorService workerThreadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
         System.out.println("The index service is started successfully. port: "+DEFAULT_SERVER_PORT);
         while (true) {
             try {
@@ -236,7 +236,7 @@ public class IndexServer {
 
             }
         }catch (Exception e){
-            System.out.println("save files to indexFilesStore error,error:"+e.getMessage());
+            System.err.println("save files to indexFilesStore error,error:"+e.getMessage());
             return IndexResponse.failedResp("save files to indexFilesStore error,error:"+e.getMessage());
         }finally {
             wLock.unlock();

@@ -5,68 +5,70 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class FileServer {
+
     public static final int FILE_SERVER_DEFAULT_PORT=10000;
 
-    /**
-     * The buffer size of the file stream.
-     */
     private static final int INPUT_BUFFER_SIZE = 4096;
 
-    public void startFileServer(int port) throws IOException {
+    private final DatagramSocket commandSocket;
+    private final ExecutorService workerThreadPool;
+    private static final int THREAD_POOL_SIZE = 1024;
+    public FileServer(int port) throws SocketException {
+        this.commandSocket = new DatagramSocket(port);
+        this.workerThreadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+        System.out.println("\nThe file server is started successfully. port: " + port);
+    }
 
-        DatagramSocket commandSocket = new DatagramSocket(port);
-        ExecutorService workerThreadPool = Executors.newFixedThreadPool(10);
-        System.out.println("\nThe file server is started successfully. port: "+port);
+    public void startFileServer() {
         while (true) {
             try {
                 byte[] inputDataBuffer = new byte[INPUT_BUFFER_SIZE];
                 DatagramPacket inputPacket = new DatagramPacket(inputDataBuffer, inputDataBuffer.length);
                 commandSocket.receive(inputPacket);
                 // The client connection is handled by the worker thread pool
-                workerThreadPool.submit(() -> accept(commandSocket,inputPacket));
+                workerThreadPool.submit(() -> accept(inputPacket));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void accept(DatagramSocket commandSocket,DatagramPacket inputPacket)  {
-
+    private void accept(DatagramPacket inputPacket) {
         String command = new String(inputPacket.getData());
         String ipAddress = inputPacket.getAddress().toString().substring(1);
         int port = inputPacket.getPort();
         byte[] outputDataBuffer;
-        try {
 
-            if ( command.startsWith("GET ") ) {
+        try {
+            if (command.startsWith("GET ")) {
                 String[] commands = command.split(" ");
                 int sendStreamPort = Integer.parseInt(commands[1]);
                 String fileName = commands[2];
-                //Check whether the file exists
+
                 if (FileUtils.isFileExists(fileName)) {
                     outputDataBuffer = "ACCEPT".getBytes();
-                    sendDatagram(commandSocket, outputDataBuffer, ipAddress, port);
+                    sendDatagram(outputDataBuffer, ipAddress, port);
                     TimeUnit.MILLISECONDS.sleep(200);
-                    sendFileStream(ipAddress,sendStreamPort,fileName);
+                    sendFileStream(ipAddress, sendStreamPort, fileName);
                 } else {
                     outputDataBuffer = "ERROR".getBytes();
-                    sendDatagram(commandSocket, outputDataBuffer, ipAddress, port);
+                    sendDatagram(outputDataBuffer, ipAddress, port);
                 }
             }
-
-        } catch ( Exception ex ) {
-            System.err.println("accept error,message: "+ex.getMessage());
-        } finally {
-
+        } catch (Exception ex) {
+            System.err.println("accept error, message: " + ex.getMessage());
         }
-
     }
 
-    private void sendDatagram(DatagramSocket clientSocket, byte[] outputBuffer, String ipAddress, int port)
-            throws IOException {
-        InetAddress inetAddress = InetAddress.getByName(ipAddress);
-        DatagramPacket outputPacket = new DatagramPacket(outputBuffer, outputBuffer.length, inetAddress, port);
-        clientSocket.send(outputPacket);
+
+    private void sendDatagram(byte[] outputBuffer, String ipAddress, int port) {
+        try (DatagramSocket clientSocket = new DatagramSocket()) {
+            InetAddress inetAddress = InetAddress.getByName(ipAddress);
+            DatagramPacket outputPacket = new DatagramPacket(outputBuffer, outputBuffer.length, inetAddress, port);
+            clientSocket.send(outputPacket);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private void sendFileStream(String ipAddress, int port, String fileName) {

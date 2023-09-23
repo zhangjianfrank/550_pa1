@@ -5,14 +5,8 @@ import java.util.Arrays;
 
 public class FileReceiver {
 
-    /**
-     * The port used for receiving file stream.
-     */
     private static final int FILE_STREAM_PORT = 10001;
 
-    /**
-     * The buffer size of the file stream.
-     */
     private static final int FILE_BUFFER_SIZE = 4096;
 
     public String receiveFile(String fileFullName,String fileName, String ipAddress, int sockPort) throws IOException {

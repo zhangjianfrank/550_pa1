@@ -13,8 +13,8 @@ public class PeerServer {
         peerClientThread.start();
 
         //File Server
-        FileServer fileServer = new FileServer();
-        fileServer.startFileServer(FileServer.FILE_SERVER_DEFAULT_PORT);
+        FileServer fileServer = new FileServer(FileServer.FILE_SERVER_DEFAULT_PORT);
+        fileServer.startFileServer();
 
     }
 

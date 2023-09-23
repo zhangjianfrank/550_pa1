@@ -2,8 +2,7 @@
 default: all
 
 all:
-	mkdir -p classes
-	javac *.java -d ./classes
+	javac *.java
 
 clean:
 	$(RM) *.class
