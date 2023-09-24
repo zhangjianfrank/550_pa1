@@ -44,11 +44,12 @@ public class FileServer {
                 String[] commands = command.split(" ");
                 int sendStreamPort = Integer.parseInt(commands[1]);
                 String fileName = commands[2];
+                long fileSize = FileUtils.getFileSizeInBytes(fileName);
+                if (fileSize>0) {
+                    outputDataBuffer = ("ACCEPT "+fileSize+" ").getBytes();
 
-                if (FileUtils.isFileExists(fileName)) {
-                    outputDataBuffer = "ACCEPT".getBytes();
                     sendDatagram(outputDataBuffer, ipAddress, port);
-                    TimeUnit.MILLISECONDS.sleep(200);
+                    TimeUnit.MILLISECONDS.sleep(500);
                     sendFileStream(ipAddress, sendStreamPort, fileName);
                 } else {
                     outputDataBuffer = "ERROR".getBytes();
@@ -82,6 +83,7 @@ public class FileServer {
             fileOutputStream = new DataOutputStream(clientFileSocket.getOutputStream());
 
             byte[] fileBuffer = new byte[INPUT_BUFFER_SIZE];
+
             int bytesRead;
 
             while ((bytesRead = fileInputStream.read(fileBuffer)) != -1) {

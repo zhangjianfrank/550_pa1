@@ -33,6 +33,10 @@ public class FileReceiver {
                 throw new IOException("Failed to obtain the " + fileName + " file from the server (" + ipAddress + ").");
             }
 
+            String[] commands = command.split(" ");
+
+            long fileSize = Long.parseLong(commands[1]);
+
             Path downloadPath = FileUtils.getUserDownloadPath();
             Path filePath = downloadPath.resolve(fileName);
 
@@ -48,13 +52,20 @@ public class FileReceiver {
             byte[] fileBuffer = new byte[FILE_BUFFER_SIZE];
             int bytesRead;
 
+            long totalBytesRead = 0;
+            
             while (true) {
                 bytesRead = fileInputStream.read(fileBuffer);
                 if (bytesRead == -1) {
                     break;
                 }
                 fileOutputStream.write(fileBuffer, 0, bytesRead);
+                totalBytesRead += bytesRead;
+                // 计算并显示下载进度条
+                int progress = (int) ((totalBytesRead * 100) / fileSize);
+                displayProgressBar(progress);
             }
+            System.out.print("\n");
             fileOutputStream.flush();
             return downloadFile.getPath();
         } finally {
@@ -78,6 +89,22 @@ public class FileReceiver {
                 ex.printStackTrace();
             }
         }
+    }
+
+    private void displayProgressBar(int progress) {
+        // The progress bar is displayed on the console,
+        // and ANSI escape sequences can be used to move the cursor and clear lines
+        System.out.print("\rDownloading: [");
+        for (int i = 0; i < 50; i++) {
+            if (i < progress / 2) {
+                System.out.print("#");
+            } else {
+                System.out.print(" ");
+            }
+        }
+        System.out.print("] " + progress + "%");
+        System.out.flush();
+
     }
 
 }

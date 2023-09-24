@@ -112,9 +112,16 @@ public class FileUtils {
         }
     }
 
-    public static boolean isFileExists(String filePath) {
+    public static long getFileSizeInBytes(String filePath) {
         File file = new File(filePath);
-        return file.exists();
+
+        // 检查文件是否存在
+        if (!file.exists() || !file.isFile()) {
+            return -1;
+        }
+
+        // 获取文件的字节数
+        return file.length();
     }
 
     public static Path getUserDownloadPath() throws IOException {
