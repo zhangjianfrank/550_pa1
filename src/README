@@ -1,0 +1,88 @@
+Documentation
+
+1.Installation Tools
+1.Install Git
+sudo apt update
+sudo apt install git
+
+2. Install JAVA and check whether the installation is successful
+sudo apt-get install openjdk-8-jdk
+java --version
+
+
+
+2.Code download and compilation
+1.Use git command to download
+git clone 
+
+2.Compile source code
+Switch the project src directory through the command line and view the current Java file
+cd  550_par_01
+
+Compile using make command and view the current compiled class file
+make
+
+
+3.Code directory structure description
+1.SRC
+Store Java code
+2.OUT
+Compiled Java CLASS file
+3.Makefile
+Javac specifies the compiled file output path
+Clean delete compiled files
+Run run_server java IndexServer
+run_peer calls java PeerServer
+default: all
+
+all:
+	javac -d  ../out/production/550_pa1/  *.java
+
+clean:
+	$(RM)  ../out/production/550_pa1/*.class
+
+run_server:
+	 java -classpath ../out/production/550_pa1 IndexServer
+
+run_peer:
+	java -classpath ../out/production/550_pa1 PeerServer
+
+run_test:
+	java -classpath ../out/production/550_pa1 TestClient
+
+4.Deploy 2 peers and 1 indexing server over 3 VMs
+1.Before the service starts,Specify a directory that stores 3 files, namely • 1M: 1KB text files • 1K: 1MB text files • 10: 1GB binary file
+
+
+In 3 VM machines, repeat step 1, step 2,One of them starts IndexServer, and the other two start PeerServer.Their IP addresses are：192.168.199.178  192.168.199.188  192.168.199.178.103
+Start the IndexServer service at 192.168.199.178,Other VMs start the PeerServer service
+
+1.IndexServer Start
+make run_server
+
+
+2.IndexServer Open port 8080 for external access
+sudo ufw alow 8080/tcp
+
+4.PeerServer Start
+Start PeerServer at 192.168.199.188 192.168.199.178.103 respectively 
+sudo ufw alow 10000
+sudo ufw alow 10001
+
+make run_peer
+
+
+
+4..Pear connects to the server
+Enter 192.168.199.178, and enter 8080 server port. After successful login, a successful connection to 192.168.199.178 appears.。
+
+5.Enter the specified path and the prepared file directory/fileSystem
+
+The server prompts to obtain 3 files for registration.
+
+4.Query the file name, then enter the rb.pdf file, and return the meta information of the rb.pdf file.They are file Number, file owner ID, which is peerID, host address and port.
+
+5..Download the file the file service，input y
+
+6.After the download is successful, you will be reminded of the saved file location.
+
