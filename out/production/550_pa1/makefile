@@ -1,17 +1,16 @@
-
 default: all
 
 all:
-	javac *.java
+	javac -d  ../out/production/550_pa1/  *.java
 
 clean:
-	$(RM) *.class
+	$(RM)  ../out/production/550_pa1/*.class
 
 run_server:
-	java IndexServer
+	 java -classpath ../out/production/550_pa1 IndexServer
 
 run_peer:
-	java PeerServer
+	java -classpath ../out/production/550_pa1 PeerServer
 
 run_test:
-	java TestClient
+	java -classpath ../out/production/550_pa1 TestClient
